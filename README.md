@@ -24,13 +24,13 @@ A production-ready Rust library for fetching, resolving, and managing content fr
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
-│  ResourceResolver                        │
-│  - Multi-source fallback                 │
+│  ResourceResolver                       │
+│  - Multi-source fallback                │
 │  - Optional caching layer               │
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
-│  ContentSource Trait                     │
+│  ContentSource Trait                    │
 │  - fetch_file()                         │
 │  - list_directory()                     │
 └─────────────────┬───────────────────────┘
@@ -129,27 +129,6 @@ let resolver = ResourceResolver::with_cache(sources, cache);
 
 ## Advanced Features
 
-### Language Files
-
-Fetch locale-specific content with automatic fallback:
-
-```rust
-use content_resolver::LanguageProvider;
-
-let provider = LanguageProvider::new(resolver, "locales".to_string());
-
-// Simple fetch
-let content = provider.fetch_language("en").await?;
-
-// With fallback
-let content = provider.fetch_with_fallback("pt-BR", "pt").await?;
-
-// Multiple fallbacks (tries pt-BR -> pt -> en)
-let content = provider.fetch_with_fallbacks(&["pt-BR", "pt", "en"]).await?;
-
-// List all available languages
-let languages = provider.list_languages().await?;
-```
 
 ### Skill Management
 
@@ -350,7 +329,3 @@ Potential additions for future versions:
 - Content validation and checksums
 - Compression for cached content
 - Metrics and observability hooks
-
-## License
-
-This is example code for educational purposes.
