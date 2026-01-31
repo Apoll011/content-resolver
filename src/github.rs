@@ -87,6 +87,7 @@ impl GitHubSource {
     /// back to relative paths that can be used with join_path
     fn strip_base_path(&self, path: &str) -> String {
         println!("{}", path);
+        println!("Base: {}", self.base_path);
         if self.base_path.is_empty() {
             return path.to_string();
         }
