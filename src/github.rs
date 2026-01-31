@@ -86,8 +86,6 @@ impl GitHubSource {
     /// Converts paths returned by GitHub API (which include base_path)
     /// back to relative paths that can be used with join_path
     fn strip_base_path(&self, path: &str) -> String {
-        println!("{}", path);
-        println!("Base: {}", self.base_path);
         if self.base_path.is_empty() {
             return path.to_string();
         }
@@ -97,7 +95,6 @@ impl GitHubSource {
         
         // If path starts with base_path, strip it
         if let Some(relative) = path_trimmed.strip_prefix(base) {
-            println!("{}",  relative.trim_start_matches('/').to_string());
             relative.trim_start_matches('/').to_string()
         } else {
             // Path doesn't contain base_path, return as-is
