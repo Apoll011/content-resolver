@@ -81,6 +81,27 @@ impl GitHubSource {
         }
     }
 
+    /// Strip base_path from an absolute repository path
+    /// 
+    /// Converts paths returned by GitHub API (which include base_path)
+    /// back to relative paths that can be used with join_path
+    fn strip_base_path(&self, path: &str) -> String {
+        if self.base_path.is_empty() {
+            return path.to_string();
+        }
+        
+        let base = self.base_path.trim_end_matches('/');
+        let path_trimmed = path.trim_start_matches('/');
+        
+        // If path starts with base_path, strip it
+        if let Some(relative) = path_trimmed.strip_prefix(base) {
+            relative.trim_start_matches('/').to_string()
+        } else {
+            // Path doesn't contain base_path, return as-is
+            path.to_string()
+        }
+    }
+
     /// Check if an error is a rate limit error
     fn is_rate_limit_error(&self, status: StatusCode) -> bool {
         status == StatusCode::FORBIDDEN || status == StatusCode::TOO_MANY_REQUESTS
@@ -144,7 +165,7 @@ impl ContentSource for GitHubSource {
                     .into_iter()
                     .map(|e| DirectoryEntry {
                         name: e.name,
-                        path: e.path,
+                        path: self.strip_base_path(&e.path),
                         entry_type: match e.entry_type.as_str() {
                             "file" => EntryType::File,
                             "dir" => EntryType::Dir,
@@ -209,5 +230,50 @@ mod tests {
 
         assert_eq!(source.join_path("file.txt"), "file.txt");
         assert_eq!(source.join_path("/file.txt"), "file.txt");
+    }
+
+    #[test]
+    fn test_strip_base_path() {
+        let source = GitHubSource::new(
+            "owner".to_string(),
+            "repo".to_string(),
+            "main".to_string(),
+            "config".to_string(),
+        );
+
+        // GitHub API returns "config/subdir" but we want "subdir"
+        assert_eq!(source.strip_base_path("config/subdir"), "subdir");
+        assert_eq!(source.strip_base_path("config/subdir/file.txt"), "subdir/file.txt");
+        
+        // Edge cases
+        assert_eq!(source.strip_base_path("config"), "");
+        assert_eq!(source.strip_base_path("/config/subdir"), "subdir");
+    }
+
+    #[test]
+    fn test_strip_base_path_empty_base() {
+        let source = GitHubSource::new(
+            "owner".to_string(),
+            "repo".to_string(),
+            "main".to_string(),
+            "".to_string(),
+        );
+
+        // With no base path, return as-is
+        assert_eq!(source.strip_base_path("config/subdir"), "config/subdir");
+        assert_eq!(source.strip_base_path("file.txt"), "file.txt");
+    }
+
+    #[test]
+    fn test_strip_base_path_nested() {
+        let source = GitHubSource::new(
+            "owner".to_string(),
+            "repo".to_string(),
+            "main".to_string(),
+            "base/path".to_string(),
+        );
+
+        assert_eq!(source.strip_base_path("base/path/config"), "config");
+        assert_eq!(source.strip_base_path("base/path/config/sub"), "config/sub");
     }
 }
